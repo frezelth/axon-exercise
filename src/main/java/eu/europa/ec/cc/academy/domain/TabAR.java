@@ -107,6 +107,111 @@ public class TabAR {
     outstandingDrinks.putAll(list.stream().collect(Collectors.toMap(OrderedItem::getItem, item -> item)));
   }
 
+    @CommandHandler
+    public void markDrinkServed(MarkDrinkServed command){
+        if (!areDrinksOutstanding(command.getItems())){
+            throw new DrinksNotOutstandingException();
+        }
+
+        AggregateLifecycle.apply(
+                DrinksServed.builder()
+                        .tabId(command.getTabId())
+                        .items(command.getItems())
+                        .build()
+        );
+    }
+
+    @EventSourcingHandler
+    void on(DrinksServed event){
+        for (Integer menuItem : event.getItems()){
+            OrderedItem orderedItem = outstandingDrinks.get(menuItem);
+            if (orderedItem != null){
+                outstandingDrinks.remove(menuItem);
+                servedItemsValue = servedItemsValue.add(orderedItem.getPrice());
+            }
+        }
+    }
+
+    @CommandHandler
+    public void markFoodPrepared(MarkFoodPrepared command){
+        if (!isFoodOutstanding(command.getItems())){
+            throw new FoodNotOutstandingException();
+        }
+
+        AggregateLifecycle.apply(
+                FoodPrepared.builder()
+                        .tabId(command.getTabId())
+                        .items(command.getItems())
+                        .build()
+        );
+    }
+
+    @EventSourcingHandler
+    void on(FoodPrepared event){
+        for (Integer menuItem : event.getItems()){
+            OrderedItem orderedItem = outstandingFood.get(menuItem);
+            if (orderedItem != null){
+                outstandingFood.remove(menuItem);
+                preparedFood.put(menuItem, orderedItem);
+            }
+        }
+    }
+
+    @CommandHandler
+    public void markFoodServed(MarkFoodServed command){
+        if (!isFoodPrepared(command.getItems())){
+            throw new FoodNotPreparedException();
+        }
+
+        AggregateLifecycle.apply(
+                FoodServed.builder()
+                        .tabId(command.getTabId())
+                        .items(command.getItems())
+                        .build()
+        );
+    }
+
+    @EventSourcingHandler
+    void on(FoodServed event){
+        for (Integer menuItem : event.getItems()){
+            OrderedItem orderedItem = preparedFood.get(menuItem);
+            if (orderedItem != null){
+                preparedFood.remove(menuItem);
+                servedItemsValue = servedItemsValue.add(orderedItem.getPrice());
+            }
+        }
+    }
+
+    @CommandHandler
+    public void closeTab(CloseTab command){
+
+        if (!isTabOpened()){
+            throw new TabNotOpenException();
+        }
+
+        if (hasUnservedItems()){
+            throw new TabHasUnservedItemsException();
+        }
+
+        if (command.getAmountPaid().compareTo(servedItemsValue) < 0){
+            throw new BillNotPaidException();
+        }
+
+        AggregateLifecycle.apply(
+                TabClosed.builder()
+                        .tabId(command.getTabId())
+                        .amountPaid(command.getAmountPaid())
+                        .orderPrice(servedItemsValue)
+                        .tipValue(command.getAmountPaid().subtract(servedItemsValue))
+                        .build()
+        );
+    }
+
+    @EventSourcingHandler
+    void on(TabClosed event){
+        opened = false;
+    }
+
   private boolean areDrinksOutstanding(Collection<Integer> menuNumbers){
     return outstandingDrinks.keySet().containsAll(menuNumbers);
   }
