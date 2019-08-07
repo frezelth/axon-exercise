@@ -1,6 +1,7 @@
 package eu.europa.ec.cc.academy.api.event;
 
 import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 import org.axonframework.serialization.Revision;
 
@@ -18,6 +19,7 @@ public class FoodServed {
 
   private UUID tabId;
 
+  @Singular
   private List<Integer> items;
   
 }

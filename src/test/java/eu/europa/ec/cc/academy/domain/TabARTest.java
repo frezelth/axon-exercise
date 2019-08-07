@@ -1,9 +1,6 @@
 package eu.europa.ec.cc.academy.domain;
 
-import eu.europa.ec.cc.academy.api.command.CloseTab;
-import eu.europa.ec.cc.academy.api.command.MarkDrinkServed;
-import eu.europa.ec.cc.academy.api.command.OpenTab;
-import eu.europa.ec.cc.academy.api.command.PlaceOrder;
+import eu.europa.ec.cc.academy.api.command.*;
 import eu.europa.ec.cc.academy.api.event.*;
 import eu.europa.ec.cc.academy.domain.exception.BillNotPaidException;
 import org.axonframework.test.aggregate.AggregateTestFixture;
@@ -116,6 +113,83 @@ public class TabARTest {
         .when(command)
         .expectSuccessfulHandlerExecution()
         .expectEvents(event);
+  }
+
+  @Test
+  public void testPrepareFood() {
+    UUID id = UUID.randomUUID();
+
+    MarkFoodPrepared command = MarkFoodPrepared.builder()
+            .tabId(id)
+            .item(10)
+            .build();
+
+    TabOpened opened = TabOpened.builder()
+            .tabId(id)
+            .waiter("Bruce Willis")
+            .tableNumber(1)
+            .build();
+
+    FoodOrdered ordered = FoodOrdered.builder()
+            .tabId(id)
+            .item(OrderedItemVO.builder()
+                    .item(10)
+                    .description("My big burger")
+                    .price(new BigDecimal("20"))
+                    .drink(true)
+                    .build())
+            .build();
+
+    FoodPrepared event = FoodPrepared.builder()
+            .tabId(id)
+            .item(10)
+            .build();
+
+    fixture.given(opened, ordered)
+            .when(command)
+            .expectSuccessfulHandlerExecution()
+            .expectEvents(event);
+  }
+
+  @Test
+  public void testServeFood() {
+    UUID id = UUID.randomUUID();
+
+    MarkFoodServed command = MarkFoodServed.builder()
+            .tabId(id)
+            .item(10)
+            .build();
+
+    TabOpened opened = TabOpened.builder()
+            .tabId(id)
+            .waiter("Bruce Willis")
+            .tableNumber(1)
+            .build();
+
+    FoodOrdered ordered = FoodOrdered.builder()
+            .tabId(id)
+            .item(OrderedItemVO.builder()
+                    .item(10)
+                    .description("My big burger")
+                    .price(new BigDecimal("20"))
+                    .drink(true)
+                    .build())
+            .build();
+
+    FoodPrepared prepared = FoodPrepared.builder()
+            .tabId(id)
+            .item(10)
+            .build();
+
+    FoodServed event = FoodServed.builder()
+            .tabId(id)
+            .item(10)
+            .build();
+
+    fixture.given(opened, ordered, prepared)
+            .when(command)
+            .expectSuccessfulHandlerExecution()
+            .expectEvents(event);
   }
 
   @Test
