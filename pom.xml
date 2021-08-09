@@ -24,7 +24,7 @@
         <swagger.version>1.5.18</swagger.version>
         <springfox.version>2.9.2</springfox.version>
 
-        <elasticsearch.version>6.6.2</elasticsearch.version>
+        <elasticsearch.version>6.8.17</elasticsearch.version>
         <spring-data-releasetrain.version>Moore-M4</spring-data-releasetrain.version>
 
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
